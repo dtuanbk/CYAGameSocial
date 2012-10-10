@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="isometric" width="50" height="50" tilewidth="64" tileheight="32">
+ <tileset firstgid="1" source="tsx/map_pro/bg_offset.tsx"/>
+ <layer name="map_pro" width="50" height="50">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAC+3DAQkAAAwEofv+pZdjoOCqqaqqqqqqqqqq6vMHV4Re6RAnAAA=
+  </data>
+ </layer>
+</map>
