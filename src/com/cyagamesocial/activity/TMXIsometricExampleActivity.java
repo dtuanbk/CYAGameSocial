@@ -516,6 +516,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 //							Toast.makeText(getBaseContext(), "Touched House 4", Toast.LENGTH_SHORT).show();
 							mDialog=new Dialog(TMXIsometricExampleActivity.this);
 							mDialog.setContentView(R.layout.custom_dialog);
+							mDialog.getWindow().getAttributes().windowAnimations=R.style.PauseDialogAnimation;
 							Button mButton=(Button)mDialog.findViewById(R.id.button1);
 							mButton.setOnClickListener(new OnClickListener() {
 								

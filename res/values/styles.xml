@@ -2,4 +2,9 @@
 
     <style name="AppTheme" parent="android:Theme.Light" />
 
+    <style name="PauseDialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/fadein</item>
+        <item name="android:windowExitAnimation">@anim/fadeout</item>
+    </style>
+
 </resources>
