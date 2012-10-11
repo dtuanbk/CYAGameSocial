@@ -628,7 +628,9 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		System.out.println("Get XY Row:" + tmxSelected.getTileColumn() + "Col:"+ tmxSelected.getTileRow());
 		int row = tmxSelected.getTileColumn();
 		int col = tmxSelected.getTileRow();
-		this.mBg_House1_Sprite.setZIndex(row+col);
+		this.mBg_House0_Sprite.setZIndex(row+col);
+		pScene.sortChildren();
+		
 	}
 
 	// Bg_House1
@@ -648,6 +650,15 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		this.mBg_House1_Sprite = new Sprite(x - 32, y - 32,
 				mBg_House1_ITextureRegion, this.getVertexBufferObjectManager());
 		pScene.attachChild(mBg_House1_Sprite);
+		float[] pToTiles = this.getEngine().getScene().convertLocalToSceneCoordinates(x ,y);
+		this.currentLayer = this.mMap.getTMXLayers().get(0);
+		TMXTile tmxSelected = this.currentLayer.getTMXTileAt(pToTiles[0],
+				pToTiles[1]);
+		System.out.println("Get XY Row:" + tmxSelected.getTileColumn() + "Col:"+ tmxSelected.getTileRow());
+		int row = tmxSelected.getTileColumn();
+		int col = tmxSelected.getTileRow();
+		this.mBg_House1_Sprite.setZIndex(row+col);
+		pScene.sortChildren();
 	}
 
 	// House1
@@ -674,6 +685,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		int row = tmxSelected.getTileColumn();
 		int col = tmxSelected.getTileRow();
 		this.m_House1_Sprite.setZIndex(row+col);
+		pScene.sortChildren();
 	}
 
 	// Bg_House2
@@ -702,6 +714,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		int row = tmxSelected.getTileColumn();
 		int col = tmxSelected.getTileRow();
 		this.mBg_House1_Sprite.setZIndex(row+col);
+		pScene.sortChildren();
 	}
 
 	// Bg_House4
