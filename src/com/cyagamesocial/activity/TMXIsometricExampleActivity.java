@@ -15,7 +15,9 @@ import org.andengine.engine.options.ScreenOrientation;
 import org.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
 import org.andengine.entity.IEntity;
 import org.andengine.entity.primitive.Line;
+import org.andengine.entity.scene.IOnAreaTouchListener;
 import org.andengine.entity.scene.IOnSceneTouchListener;
+import org.andengine.entity.scene.ITouchArea;
 import org.andengine.entity.scene.Scene;
 import org.andengine.entity.scene.background.Background;
 import org.andengine.entity.scene.background.RepeatingSpriteBackground;
@@ -49,11 +51,21 @@ import org.andengine.util.debug.Debug;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.database.DataSetObserver;
+import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ListAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import com.cyagamesocial.R;
 import com.cyagamesocial.log.IErrorLog;
@@ -150,7 +162,15 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 	private AnimatedSprite player;
 	private BitmapTextureAtlas mBitmapTextureAtlas2;
 	private ITextureRegion mCayTextureRegion;
-
+	
+	/*
+	 *HUD 
+	 */
+	//Icon Setting
+	private BitmapTextureAtlas mHUD_Icon_Setting_BitmapTextureAtlas;
+	private ITextureRegion mHUD_Icon_Setting_ITextureRegion;
+	private Sprite mHUD_Icon_Setting_Sprite;
+	
 	// Bg_House0
 	private BitmapTextureAtlas mBg_House0_BitmapTextureAtlas;
 	private ITextureRegion mBg_House0_ITextureRegion;
@@ -179,11 +199,20 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 	private BitmapTextureAtlas m_House4_BitmapTextureAtlas;
 	private ITextureRegion m_House4_ITextureRegion;
 	private Sprite m_House4_Sprite;
-
+	
 	// Kiem tra collidson cua new sprite voi old sprite
 	ArrayList<Sprite> mSpriteCollid = null;
 
 	private Sprite cay;
+	
+	
+	
+
+	@Override
+	protected void onCreate(Bundle pSavedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onCreate(pSavedInstanceState);
+	}
 
 	@Override
 	public EngineOptions onCreateEngineOptions() {
@@ -226,8 +255,11 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		this.mPinchZoomDetector = new PinchZoomDetector(this);
 		this.mLittleFriend = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 		SoundFactory.setAssetBasePath("mfx/");
-		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/map_pro/");
-
+		
+		//LoadResource HUD
+		load_Icon_Setting_Resource();
+		
+		
 		// LoadResource
 		loadBg_House0Resource();
 		loadBg_House1Resource();
@@ -276,10 +308,43 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 				this.mFontManager.Font_HUD, "Row: Col:",
 				"Row: Not in Bounds Col: Not in Bounds".length(),
 				this.getVertexBufferObjectManager());
+		float mHUD_Icon_Setting_X=CAMERA_WIDTH-this.mHUD_Icon_Setting_ITextureRegion.getWidth();
+		float mHUD_Icon_Setting_Y=CAMERA_HEIGHT-this.mHUD_Icon_Setting_ITextureRegion.getHeight();
+		
+		this.mHUD_Icon_Setting_Sprite=new Sprite(mHUD_Icon_Setting_X, mHUD_Icon_Setting_Y, this.mHUD_Icon_Setting_ITextureRegion, this.getVertexBufferObjectManager());
+		this.mHUD.attachChild(this.mHUD_Icon_Setting_Sprite);
+		this.mHUD.registerTouchArea(this.mHUD_Icon_Setting_Sprite);
 		this.mHUD.attachChild(this.mFPS);
 		this.mHUD.attachChild(this.mXYLoc);
 		this.mHUD.attachChild(this.mTileRowCol1);
+		this.mHUD.setOnAreaTouchListener(new IOnAreaTouchListener() {
+			
+			@Override
+			public boolean onAreaTouched(TouchEvent pSceneTouchEvent,
+					ITouchArea pTouchArea, float pTouchAreaLocalX,
+					float pTouchAreaLocalY) {
+				// TODO Auto-generated method stub
+				Sprite sprite=(Sprite)pTouchArea;
+				if(pSceneTouchEvent.isActionDown()){
+					if(sprite.equals(TMXIsometricExampleActivity.this.mHUD_Icon_Setting_Sprite)){
+						TMXIsometricExampleActivity.this.runOnUiThread(new Runnable() {
+							
+							@Override
+							public void run() {
+								// TODO Auto-generated method stub
+		//						Toast.makeText(getBaseContext(), "Touched Setting", Toast.LENGTH_SHORT).show();
+								showDialog();
+								
+							}
 
+							
+							
+						});
+					}
+				}
+				return true;
+			}
+		});
 		mScene.registerUpdateHandler(new TimerHandler(.5f, true,
 				new ITimerCallback() {
 					@Override
@@ -517,15 +582,6 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 							mDialog=new Dialog(TMXIsometricExampleActivity.this);
 							mDialog.setContentView(R.layout.custom_dialog);
 							mDialog.getWindow().getAttributes().windowAnimations=R.style.PauseDialogAnimation;
-							Button mButton=(Button)mDialog.findViewById(R.id.button1);
-							mButton.setOnClickListener(new OnClickListener() {
-								
-								@Override
-								public void onClick(View v) {
-									// TODO Auto-generated method stub
-									mDialog.dismiss();
-								}
-							});
 							mDialog.show();
 						}
 					});
@@ -551,6 +607,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 	// Bg_House0
 
 	public void loadBg_House0Resource() {
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/map_pro/");
 		this.mBg_House0_BitmapTextureAtlas = new BitmapTextureAtlas(
 				this.getTextureManager(), 64, 32, TextureOptions.BILINEAR);
 		this.mBg_House0_ITextureRegion = BitmapTextureAtlasTextureRegionFactory
@@ -564,11 +621,20 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		this.mBg_House0_Sprite = new Sprite(x - 32, y - 16,
 				mBg_House0_ITextureRegion, this.getVertexBufferObjectManager());
 		pScene.attachChild(mBg_House0_Sprite);
+		float[] pToTiles = this.getEngine().getScene().convertLocalToSceneCoordinates(x ,y);
+		this.currentLayer = this.mMap.getTMXLayers().get(0);
+		TMXTile tmxSelected = this.currentLayer.getTMXTileAt(pToTiles[0],
+				pToTiles[1]);
+		System.out.println("Get XY Row:" + tmxSelected.getTileColumn() + "Col:"+ tmxSelected.getTileRow());
+		int row = tmxSelected.getTileColumn();
+		int col = tmxSelected.getTileRow();
+		this.mBg_House1_Sprite.setZIndex(row+col);
 	}
 
 	// Bg_House1
 
 	public void loadBg_House1Resource() {
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/map_pro/");
 		this.mBg_House1_BitmapTextureAtlas = new BitmapTextureAtlas(
 				this.getTextureManager(), 96, 48, TextureOptions.BILINEAR);
 		this.mBg_House1_ITextureRegion = BitmapTextureAtlasTextureRegionFactory
@@ -586,6 +652,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 
 	// House1
 	public void load_House1Resource() {
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/map_pro/");
 		this.m_House1_BitmapTextureAtlas = new BitmapTextureAtlas(
 				this.getTextureManager(), 96, 125, TextureOptions.BILINEAR);
 		this.m_House1_ITextureRegion = BitmapTextureAtlasTextureRegionFactory
@@ -599,11 +666,20 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		this.m_House1_Sprite = new Sprite(x - 32, y - 32 - 76,
 				m_House1_ITextureRegion, this.getVertexBufferObjectManager());
 		pScene.attachChild(m_House1_Sprite);
+		float[] pToTiles = this.getEngine().getScene().convertLocalToSceneCoordinates(x ,y);
+		this.currentLayer = this.mMap.getTMXLayers().get(0);
+		TMXTile tmxSelected = this.currentLayer.getTMXTileAt(pToTiles[0],
+				pToTiles[1]);
+		System.out.println("Get XY Row:" + tmxSelected.getTileColumn() + "Col:"+ tmxSelected.getTileRow());
+		int row = tmxSelected.getTileColumn();
+		int col = tmxSelected.getTileRow();
+		this.m_House1_Sprite.setZIndex(row+col);
 	}
 
 	// Bg_House2
 
 	public void loadBg_House1_Rot_Resource() {
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/map_pro/");
 		this.mBg_House1_Rot_BitmapTextureAtlas = new BitmapTextureAtlas(
 				this.getTextureManager(), 96, 48, TextureOptions.BILINEAR);
 		this.mBg_House1_Rot_ITextureRegion = BitmapTextureAtlasTextureRegionFactory
@@ -618,11 +694,20 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 				mBg_House1_Rot_ITextureRegion,
 				this.getVertexBufferObjectManager());
 		pScene.attachChild(mBg_House1_Rot_Sprite);
+		float[] pToTiles = this.getEngine().getScene().convertLocalToSceneCoordinates(x ,y);
+		this.currentLayer = this.mMap.getTMXLayers().get(0);
+		TMXTile tmxSelected = this.currentLayer.getTMXTileAt(pToTiles[0],
+				pToTiles[1]);
+		System.out.println("Get XY Row:" + tmxSelected.getTileColumn() + "Col:"+ tmxSelected.getTileRow());
+		int row = tmxSelected.getTileColumn();
+		int col = tmxSelected.getTileRow();
+		this.mBg_House1_Sprite.setZIndex(row+col);
 	}
 
 	// Bg_House4
 
 	public void loadBg_House4_Resource() {
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/map_pro/");
 		this.mBg_House4_BitmapTextureAtlas = new BitmapTextureAtlas(
 				this.getTextureManager(), 128, 64, TextureOptions.BILINEAR);
 		this.mBg_House4_ITextureRegion = BitmapTextureAtlasTextureRegionFactory
@@ -635,11 +720,21 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		this.mBg_House4_Sprite = new Sprite(x - 32, y - 32,
 				mBg_House4_ITextureRegion, this.getVertexBufferObjectManager());
 		pScene.attachChild(mBg_House4_Sprite);
+		float[] pToTiles = this.getEngine().getScene().convertLocalToSceneCoordinates(x ,y);
+		this.currentLayer = this.mMap.getTMXLayers().get(0);
+		TMXTile tmxSelected = this.currentLayer.getTMXTileAt(pToTiles[0],
+				pToTiles[1]);
+		System.out.println("Get XY Row:" + tmxSelected.getTileColumn() + "Col:"+ tmxSelected.getTileRow());
+		int row = tmxSelected.getTileColumn();
+		int col = tmxSelected.getTileRow();
+		this.mBg_House4_Sprite.setZIndex(row+col);
+		pScene.sortChildren();
 	}
 
 	// House4
 
 	public void load_House4_Resource() {
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/map_pro/");
 		this.m_House4_BitmapTextureAtlas = new BitmapTextureAtlas(
 				this.getTextureManager(), 128, 77, TextureOptions.BILINEAR);
 		this.m_House4_ITextureRegion = BitmapTextureAtlasTextureRegionFactory
@@ -666,6 +761,19 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		pScene.sortChildren();
 		System.out.println("Zindex:"+this.m_House4_Sprite.getZIndex());
 	}
+	
+	
+	//Load resource icon_setting
+	public void load_Icon_Setting_Resource(){
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
+		this.mHUD_Icon_Setting_BitmapTextureAtlas=new BitmapTextureAtlas(this.getTextureManager(), 64, 64,TextureOptions.BILINEAR);
+		this.mHUD_Icon_Setting_ITextureRegion=BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mHUD_Icon_Setting_BitmapTextureAtlas, this, "icon_setting.png",0,0);
+		this.mHUD_Icon_Setting_BitmapTextureAtlas.load();
+	} 
+	
+	
+	//Add Setting
+	
 
 	public ArrayList<Sprite> checkColision(Sprite sprite, Scene pScene) {
 		ArrayList<Sprite> collidsonSprite = new ArrayList<Sprite>();
@@ -746,6 +854,127 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		}else{
 			pScene.attachChild(sprite);
 		}
+	}
+	private void showDialog() {
+		// TODO Auto-generated method stub
+		mDialog=new Dialog(TMXIsometricExampleActivity.this);
+		mDialog.setContentView(R.layout.custom_dialog);
+		mDialog.getWindow().getAttributes().windowAnimations=R.style.PauseDialogAnimation;
+
+		final Context context=TMXIsometricExampleActivity.this.getApplicationContext();
+		ListView mListView=(ListView)mDialog.findViewById(R.id.listView1);
+		final String[] mStrings={"aaa","bbb","ccc","ddd","eee","fff","ggg"};
+		final Integer[] mIntegers={R.drawable.aaa,R.drawable.bbb,R.drawable.ccc,R.drawable.ddd,R.drawable.ddd,R.drawable.fff,R.drawable.ggg};
+		mListView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
+					long arg3) {
+				// TODO Auto-generated method stub
+				System.out.println("Touch Item");
+			}
+		});
+		mListView.setAdapter(new ListAdapter() {
+			
+			@Override
+			public void unregisterDataSetObserver(DataSetObserver observer) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void registerDataSetObserver(DataSetObserver observer) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public boolean isEmpty() {
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public boolean hasStableIds() {
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public int getViewTypeCount() {
+				// TODO Auto-generated method stub
+				return mStrings.length;
+			}
+			@Override
+			public View getView(final int position, View convertView, ViewGroup parent) {
+				// TODO Auto-generated method stub
+				if(convertView==null){
+					LayoutInflater layout=(LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+					convertView=layout.inflate(R.layout.row_item, parent,false);
+					TextView tv=(TextView)convertView.findViewById(R.id.textView1);
+					tv.setText(mStrings[position]);
+					tv.setOnClickListener(new OnClickListener() {
+						
+						@Override
+						public void onClick(View v) {
+							// TODO Auto-generated method stub
+							System.out.println("Touch Text View");
+							mDialog.dismiss();
+						}
+					});
+					ImageView img=(ImageView)convertView.findViewById(R.id.imageView1);
+					img.setImageResource(mIntegers[position]);
+					img.setOnClickListener(new OnClickListener() {
+						
+						@Override
+						public void onClick(View v) {
+							// TODO Auto-generated method stub
+							mDialog.dismiss();
+							Config.BGHOUSE_SELECTED=position;
+							
+						}
+					});
+				}
+				return convertView;
+			}
+			
+			@Override
+			public int getItemViewType(int position) {
+				// TODO Auto-generated method stub
+				return position;
+			}
+			
+			@Override
+			public long getItemId(int position) {
+				// TODO Auto-generated method stub
+				return position;
+			}
+			
+			@Override
+			public Object getItem(int position) {
+				// TODO Auto-generated method stub
+				return position;
+			}
+			
+			@Override
+			public int getCount() {
+				// TODO Auto-generated method stub
+				return mStrings.length;
+			}
+			
+			@Override
+			public boolean isEnabled(int position) {
+				// TODO Auto-generated method stub
+				return true;
+			}
+			
+			@Override
+			public boolean areAllItemsEnabled() {
+				// TODO Auto-generated method stub
+				return true;
+			}
+		});
+		mDialog.show();
 	}
 
 }
