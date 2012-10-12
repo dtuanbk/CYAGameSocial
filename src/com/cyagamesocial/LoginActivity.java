@@ -23,6 +23,7 @@ import org.andengine.ui.activity.SimpleBaseGameActivity;
 
 import com.cyagamesocial.activity.MainGameActivity;
 import com.cyagamesocial.activity.TMXIsometricExampleActivity;
+import com.cyagamesocial.activity.TMXIsometricExampleActivity;
 import com.cyagamesocial.unity.MyCamera;
 
 import android.content.Intent;

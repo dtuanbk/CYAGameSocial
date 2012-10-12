@@ -13,14 +13,12 @@ import org.andengine.engine.handler.timer.TimerHandler;
 import org.andengine.engine.options.EngineOptions;
 import org.andengine.engine.options.ScreenOrientation;
 import org.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
-import org.andengine.entity.IEntity;
 import org.andengine.entity.primitive.Line;
 import org.andengine.entity.scene.IOnAreaTouchListener;
 import org.andengine.entity.scene.IOnSceneTouchListener;
 import org.andengine.entity.scene.ITouchArea;
 import org.andengine.entity.scene.Scene;
 import org.andengine.entity.scene.background.Background;
-import org.andengine.entity.scene.background.RepeatingSpriteBackground;
 import org.andengine.entity.sprite.AnimatedSprite;
 import org.andengine.entity.sprite.Sprite;
 import org.andengine.entity.text.Text;
@@ -44,6 +42,7 @@ import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegion
 import org.andengine.opengl.texture.atlas.bitmap.BuildableBitmapTextureAtlas;
 import org.andengine.opengl.texture.atlas.bitmap.source.IBitmapTextureAtlasSource;
 import org.andengine.opengl.texture.atlas.buildable.builder.BlackPawnTextureAtlasBuilder;
+import org.andengine.opengl.texture.atlas.buildable.builder.ITextureAtlasBuilder.TextureAtlasBuilderException;
 import org.andengine.opengl.texture.region.ITextureRegion;
 import org.andengine.opengl.texture.region.TiledTextureRegion;
 import org.andengine.ui.activity.BaseGameActivity;
@@ -61,7 +60,6 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
@@ -70,7 +68,6 @@ import android.widget.TextView;
 import com.cyagamesocial.R;
 import com.cyagamesocial.log.IErrorLog;
 import com.cyagamesocial.log.Logging;
-import com.cyagamesocial.unity.MyCamera;
 import com.cyagamesocial.utils.Config;
 import com.cyagamesocial.utils.StateOfTile;
 
@@ -83,13 +80,24 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 	
 	private Dialog mDialog;
 	
+	//Scene
+	private Scene mScene;
+	
+	//Loading Scene
+	private Scene mLoadingScene;
+	
+	private BitmapTextureAtlas mLoadingSceneBitmapTextureAtlas;
+	private ITextureRegion mLoadingSceneITextureRegion;
+	private Sprite mLoadingSceneSprite;
+	
+	
 	// Camera stuff
+	
 	
 	public int CAMERA_WIDTH = 800;
 	public int CAMERA_HEIGHT = 480;
 	public ZoomCamera mCamera;
 
-	private RepeatingSpriteBackground mGrassBackground;
 
 	public ScrollDetector mScrollDetector;
 	public PinchZoomDetector mPinchZoomDetector;
@@ -98,7 +106,8 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 	private final float zoomDepth = 5; // Smaller this is, the less we zoom in?
 	private final float minZoom = 1f;
 	private boolean mClicked = false;
-
+	
+	
 	private HUD mHUD;
 	private Text mFPS;
 	private Text mXYLoc;
@@ -248,6 +257,16 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 			OnCreateResourcesCallback pOnCreateResourcesCallback)
 			throws Exception {
 		this.log.i(0, "onCreateResources");
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
+		this.mLoadingSceneBitmapTextureAtlas=new BitmapTextureAtlas(this.getTextureManager(), 320, 240,TextureOptions.BILINEAR);
+		this.mLoadingSceneITextureRegion=BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mLoadingSceneBitmapTextureAtlas, this, "loading.png",0,0);
+		this.mLoadingSceneBitmapTextureAtlas.load();
+//		loadOnCreateResources();
+		pOnCreateResourcesCallback.onCreateResourcesFinished();
+		
+	}
+	public void loadOnCreateResources(){
+		
 		this.mFontManager = new FontManager(this, this.mFontFile);
 		this.mMapHandler = new MapHandler(this);
 
@@ -258,7 +277,6 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		
 		//LoadResource HUD
 		load_Icon_Setting_Resource();
-		
 		
 		// LoadResource
 		loadBg_House0Resource();
@@ -271,9 +289,14 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		this.mBitmapTextureAtlas = new BuildableBitmapTextureAtlas(
 				this.getTextureManager(), 186, 154, TextureOptions.NEAREST);
 		try {
-			this.mBitmapTextureAtlas
-					.build(new BlackPawnTextureAtlasBuilder<IBitmapTextureAtlasSource, BitmapTextureAtlas>(
-							0, 0, 1));
+			try {
+				this.mBitmapTextureAtlas
+						.build(new BlackPawnTextureAtlasBuilder<IBitmapTextureAtlasSource, BitmapTextureAtlas>(
+								0, 0, 1));
+			} catch (TextureAtlasBuilderException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			this.mBitmapTextureAtlas.load();
 			this.mZap = SoundFactory.createSoundFromAsset(this.getEngine()
 					.getSoundManager(), this, this.mSound);
@@ -281,17 +304,49 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 			Debug.e(e);
 		}
 
-		pOnCreateResourcesCallback.onCreateResourcesFinished();
 	}
-
 	@Override
 	public void onCreateScene(OnCreateSceneCallback pOnCreateSceneCallback)
 			throws Exception {
 		this.log.i(0, "onCreateScene");
-		Scene mScene = new Scene();
+		this.mLoadingScene=new Scene();
+		this.mLoadingSceneSprite=new Sprite(0, 0, this.mLoadingSceneITextureRegion, this.getVertexBufferObjectManager());
+		this.mLoadingScene.attachChild(this.mLoadingSceneSprite);
+		pOnCreateSceneCallback.onCreateSceneFinished(this.mLoadingScene);
+		
+	}
+
+	@Override
+	public void onPopulateScene(Scene pScene,
+			OnPopulateSceneCallback pOnPopulateSceneCallback) throws Exception {
+		this.log.i(0, "onPopulateScene");
+		 mEngine.registerUpdateHandler(new TimerHandler(0.01f, new ITimerCallback() {
+             public void onTimePassed(final TimerHandler pTimerHandler) {
+                     mEngine.unregisterUpdateHandler(pTimerHandler);
+                     loadOnCreateResources();
+                     loadOnCreateScene();
+                     try
+                     {
+                             Thread.sleep(1000);
+                     }
+                     catch (InterruptedException e)
+                     {
+                             e.printStackTrace();
+                     }
+                    
+                     mEngine.setScene(mScene);
+                     
+             		 mMapHandler.loadMap();
+             }
+		 }));
+		pOnPopulateSceneCallback.onPopulateSceneFinished();
+	}
+	
+	public void loadOnCreateScene(){
+		this.mScene = new Scene();
 		final FPSLogger fpsLogger = new FPSLogger();
 		this.getEngine().registerUpdateHandler(fpsLogger);
-		mScene.setBackground(new Background(0.9686f, 0.8588f, 0.6941f));
+		this.mScene.setBackground(new Background(0.9686f, 0.8588f, 0.6941f));
 
 		this.mHUD = new HUD();
 		this.getEngine().getCamera().setHUD(this.mHUD);
@@ -332,12 +387,10 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 							@Override
 							public void run() {
 								// TODO Auto-generated method stub
-		//						Toast.makeText(getBaseContext(), "Touched Setting", Toast.LENGTH_SHORT).show();
 								showDialog();
 								
 							}
 
-							
 							
 						});
 					}
@@ -345,7 +398,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 				return true;
 			}
 		});
-		mScene.registerUpdateHandler(new TimerHandler(.5f, true,
+		this.mScene.registerUpdateHandler(new TimerHandler(.5f, true,
 				new ITimerCallback() {
 					@Override
 					public void onTimePassed(final TimerHandler pTimerHandler) {
@@ -353,27 +406,13 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 					}
 				}));
 		
-		pOnCreateSceneCallback.onCreateSceneFinished(mScene);
+		mScene.setOnSceneTouchListener(TMXIsometricExampleActivity.this);
+		mScene.setTouchAreaBindingOnActionMoveEnabled(true);
+		mScene.setOnAreaTouchTraversalFrontToBack();
 
-	}
-
-	@Override
-	public void onPopulateScene(Scene pScene,
-			OnPopulateSceneCallback pOnPopulateSceneCallback) throws Exception {
-		this.log.i(0, "onPopulateScene");
-		pScene.setOnSceneTouchListener(this);
-		pScene.setTouchAreaBindingOnActionMoveEnabled(true);
-		pScene.setOnAreaTouchTraversalFrontToBack();
-
-		this.mMapHandler.loadMap();
-
-		// Add sprite
 		
-		this.mMapHandler.attachAllObjectLayers();
-
-		pOnPopulateSceneCallback.onPopulateSceneFinished();
 	}
-
+	
 	@Override
 	public void onPinchZoomStarted(PinchZoomDetector pPinchZoomDetector,
 			TouchEvent pSceneTouchEvent) {
@@ -562,8 +601,6 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 								.getTileRow()] == 0
 						&& StateofTile[tmxSelected.getTileColumn() + 1][tmxSelected
 								.getTileRow() - 1] == 0) {
-					// addBg_House4(pScene, tmxSelected.getTileXIsoCentre(),
-					// tmxSelected.getTileYIsoCentre());
 					add_House4(pScene, tmxSelected.getTileXIsoCentre(),
 							tmxSelected.getTileYIsoCentre());
 					 StateofTile[tmxSelected.getTileColumn()][tmxSelected.getTileRow()]=4;
@@ -786,88 +823,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 	
 	
 	//Add Setting
-	
 
-	public ArrayList<Sprite> checkColision(Sprite sprite, Scene pScene) {
-		ArrayList<Sprite> collidsonSprite = new ArrayList<Sprite>();
-		int count = pScene.getChildCount();
-		float[] pToTiles = this.getEngine().getScene().convertLocalToSceneCoordinates(sprite.getX() + 32,sprite.getY() + 32 + 12);
-		this.currentLayer = this.mMap.getTMXLayers().get(0);
-		TMXTile tmxSelected = this.currentLayer.getTMXTileAt(pToTiles[0],
-				pToTiles[1]);
-		System.out.println("Get XY Row:" + tmxSelected.getTileColumn() + "Col:"+ tmxSelected.getTileRow());
-		int row = tmxSelected.getTileColumn();
-		int col = tmxSelected.getTileRow();
-		for (int i = 1; i < count; i++) {
-			//Reset Zindex
-			IEntity entity = pScene.getChildByIndex(i);
-			
-			entity.setZIndex(0);
-			
-			if (entity instanceof Sprite) {
-				if (entity.getUserData().equals("sprite_House4")) {
-
-					if (((Sprite) entity).collidesWith(sprite)) {
-						System.out.println("Co va cham voi sprite da co");
-						float[] pToTiles_en = this.getEngine().getScene().convertLocalToSceneCoordinates(entity.getX() + 32,entity.getY() + 32 + 12);
-						this.currentLayer = this.mMap.getTMXLayers().get(0);
-						TMXTile tmxSelected_en = this.currentLayer
-								.getTMXTileAt(pToTiles_en[0], pToTiles_en[1]);
-						System.out.println("Get XY Row:"
-								+ tmxSelected_en.getTileColumn() + "Col:"
-								+ tmxSelected_en.getTileRow());
-						if (row < tmxSelected_en.getTileColumn()
-								|| col < tmxSelected_en.getTileRow()) {
-							collidsonSprite.add((Sprite) entity);
-							System.out.println("Zindex:"+entity.getZIndex());
-						}
-					}
-				}
-			}
-		}
-		return collidsonSprite;
-	}
-
-	public void checkColision_en(Sprite sprite, Scene pScene) {
-		int count = pScene.getChildCount();
-		ArrayList<Sprite> collidsonSprite = new ArrayList<Sprite>();
-		float[] pToTiles = this.getEngine().getScene().convertLocalToSceneCoordinates(sprite.getX() + 32,sprite.getY() + 32 + 12);
-		this.currentLayer = this.mMap.getTMXLayers().get(0);
-		final TMXTile tmxSelected = this.currentLayer.getTMXTileAt(pToTiles[0],
-				pToTiles[1]);
-		System.out.println("Get XY Row:" + tmxSelected.getTileColumn() + "Col:"+ tmxSelected.getTileRow());
-		int row = tmxSelected.getTileColumn();
-		int col = tmxSelected.getTileRow();
-
-		for (int i = 0; i < count; i++) {
-			IEntity entity = pScene.getChildByIndex(i);
-			if (entity instanceof Sprite) {
-				if (entity.getUserData().equals("sprite_House4")) {
-					if (((Sprite) entity).collidesWith(sprite)) {
-						System.out.println("Co va cham voi sprite da co");
-						float[] pToTiles_en = this.getEngine().getScene().convertLocalToSceneCoordinates(entity.getX() + 32,entity.getY() + 32 + 12);
-						this.currentLayer = this.mMap.getTMXLayers().get(0);
-						TMXTile tmxSelected_en = this.currentLayer.getTMXTileAt(pToTiles_en[0], pToTiles_en[1]);
-						System.out.println("Get XY Row:"+ tmxSelected_en.getTileColumn() + "Col:"+ tmxSelected_en.getTileRow());
-						if (row < tmxSelected_en.getTileColumn()|| col < tmxSelected_en.getTileRow()) {
-							System.out.println("Test va cham");
-							collidsonSprite.add((Sprite) entity);
-						}
-					}
-				}
-			}
-		}
-		if(collidsonSprite.size()>0){
-			pScene.detachChild(sprite);
-			pScene.attachChild(sprite);
-			for(int i=0;i<collidsonSprite.size();i++){
-				pScene.detachChild(collidsonSprite.get(i));
-				pScene.attachChild(collidsonSprite.get(i));
-			}
-		}else{
-			pScene.attachChild(sprite);
-		}
-	}
 	private void showDialog() {
 		// TODO Auto-generated method stub
 		mDialog=new Dialog(TMXIsometricExampleActivity.this);
