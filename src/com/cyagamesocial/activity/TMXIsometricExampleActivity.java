@@ -8,6 +8,7 @@ import org.andengine.audio.sound.SoundFactory;
 import org.andengine.engine.Engine;
 import org.andengine.engine.camera.ZoomCamera;
 import org.andengine.engine.camera.hud.HUD;
+import org.andengine.engine.handler.IUpdateHandler;
 import org.andengine.engine.handler.timer.ITimerCallback;
 import org.andengine.engine.handler.timer.TimerHandler;
 import org.andengine.engine.options.EngineOptions;
@@ -180,6 +181,22 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 	private ITextureRegion mHUD_Icon_Setting_ITextureRegion;
 	private Sprite mHUD_Icon_Setting_Sprite;
 	
+	
+	//BackGorund Process Bar
+	private BitmapTextureAtlas mHUD_BgProcess_BitmapTextureAtlas;
+	private ITextureRegion mHUD_BgProcess_ITextureRegion;
+	private Sprite mHUD_BgProcess_Sprite;
+	
+	//Process Bar
+	private BitmapTextureAtlas mHUD_Process_BitmapTextureAtlas;
+	private ITextureRegion mHUD_Process_ITextureRegion;
+	private Sprite mHUD_Process_Sprite;
+	/*
+	 * Finished HUD
+	 */
+	
+	
+	
 	// Bg_House0
 	private BitmapTextureAtlas mBg_House0_BitmapTextureAtlas;
 	private ITextureRegion mBg_House0_ITextureRegion;
@@ -215,7 +232,10 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 	private Sprite cay;
 	
 	
-	
+	//process
+	private int process=0;
+	private boolean isProcessChanged=true;
+	private int currentProcess=0;
 
 	@Override
 	protected void onCreate(Bundle pSavedInstanceState) {
@@ -238,7 +258,6 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 				ScreenOrientation.LANDSCAPE_FIXED, new RatioResolutionPolicy(
 						CAMERA_WIDTH, CAMERA_HEIGHT), this.mCamera);
 		eOps.getAudioOptions().setNeedsSound(true);
-
 		return eOps;
 	}
 
@@ -277,6 +296,10 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		
 		//LoadResource HUD
 		load_Icon_Setting_Resource();
+		load_BgProcess_Resoucre();
+		load_Process_Resource();
+		
+		
 		
 		// LoadResource
 		loadBg_House0Resource();
@@ -363,15 +386,29 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 				this.mFontManager.Font_HUD, "Row: Col:",
 				"Row: Not in Bounds Col: Not in Bounds".length(),
 				this.getVertexBufferObjectManager());
+
+		this.mHUD.attachChild(this.mFPS);
+		this.mHUD.attachChild(this.mXYLoc);
+		this.mHUD.attachChild(this.mTileRowCol1);
+		
+		
+		//Icon Setting
 		float mHUD_Icon_Setting_X=CAMERA_WIDTH-this.mHUD_Icon_Setting_ITextureRegion.getWidth();
 		float mHUD_Icon_Setting_Y=CAMERA_HEIGHT-this.mHUD_Icon_Setting_ITextureRegion.getHeight();
 		
 		this.mHUD_Icon_Setting_Sprite=new Sprite(mHUD_Icon_Setting_X, mHUD_Icon_Setting_Y, this.mHUD_Icon_Setting_ITextureRegion, this.getVertexBufferObjectManager());
 		this.mHUD.attachChild(this.mHUD_Icon_Setting_Sprite);
 		this.mHUD.registerTouchArea(this.mHUD_Icon_Setting_Sprite);
-		this.mHUD.attachChild(this.mFPS);
-		this.mHUD.attachChild(this.mXYLoc);
-		this.mHUD.attachChild(this.mTileRowCol1);
+		
+		//Process
+		this.mHUD_BgProcess_Sprite=new Sprite(100, 0, this.mHUD_BgProcess_ITextureRegion, this.getVertexBufferObjectManager());
+		this.mHUD.attachChild(mHUD_BgProcess_Sprite);
+		
+		this.mHUD_Process_Sprite=new Sprite(101, 1, this.mHUD_Process_ITextureRegion, this.getVertexBufferObjectManager());
+		this.mHUD_Process_Sprite.setWidth(process);
+		this.mHUD_Process_Sprite.setHeight(22);
+		this.mHUD.attachChild(this.mHUD_Process_Sprite);
+		
 		this.mHUD.setOnAreaTouchListener(new IOnAreaTouchListener() {
 			
 			@Override
@@ -390,19 +427,25 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 								showDialog();
 								
 							}
-
-							
 						});
 					}
 				}
 				return true;
 			}
 		});
+//		this.mHUD.registerUpdateHandler(pIUpdateHandler);
 		this.mScene.registerUpdateHandler(new TimerHandler(.5f, true,
 				new ITimerCallback() {
 					@Override
 					public void onTimePassed(final TimerHandler pTimerHandler) {
 						mFPS.setText("FPS: " + fpsLogger.getFPS());
+						if(isProcessChanged){
+							if(process<=currentProcess)
+							{
+								process=process+1;
+								mHUD_Process_Sprite.setWidth(process);
+							}
+						}
 					}
 				}));
 		
@@ -412,6 +455,25 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 
 		
 	}
+	
+	
+	IUpdateHandler pIUpdateHandler=new IUpdateHandler() {
+		
+		@Override
+		public void reset() {
+			// TODO Auto-generated method stub
+			
+		}
+		
+		@Override
+		public void onUpdate(float pSecondsElapsed) {
+			// TODO Auto-generated method stub
+			if(isProcessChanged){
+				
+			}
+		}
+	};
+	
 	
 	@Override
 	public void onPinchZoomStarted(PinchZoomDetector pPinchZoomDetector,
@@ -557,6 +619,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 							tmxSelected.getTileYIsoCentre());
 					StateofTile[tmxSelected.getTileColumn()][tmxSelected
 							.getTileRow()] = STATE_BGHOUSE0;
+					currentProcess=process+0;
 				} else {
 					System.out.println("BGHouse0 has added this Tile");
 				}
@@ -573,6 +636,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 							.getTileRow()] = 2;
 					StateofTile[tmxSelected.getTileColumn()][tmxSelected
 							.getTileRow() - 1] = 2;
+					currentProcess=process+1;
 				} else {
 					System.out.println("You can't bulid House1 in this Tile");
 				}
@@ -588,6 +652,7 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 							.getTileRow()] = 2;
 					StateofTile[tmxSelected.getTileColumn() + 1][tmxSelected
 							.getTileRow()] = 2;
+					currentProcess=process+2;
 				} else {
 					System.out
 							.println("You can't bulid House1_Rot in this Tile");
@@ -607,7 +672,8 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 					 StateofTile[tmxSelected.getTileColumn()][tmxSelected.getTileRow()-1]=4;
 					 StateofTile[tmxSelected.getTileColumn()+1][tmxSelected.getTileRow()]=4;
 					 StateofTile[tmxSelected.getTileColumn()+1][tmxSelected.getTileRow()-1]=4;
-					//
+					 currentProcess=process+4;
+					 //
 				} else {
 					this.runOnUiThread(new Runnable() {
 						
@@ -726,7 +792,6 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 	}
 
 	// Bg_House2
-
 	public void loadBg_House1_Rot_Resource() {
 		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/map_pro/");
 		this.mBg_House1_Rot_BitmapTextureAtlas = new BitmapTextureAtlas(
@@ -812,7 +877,10 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		System.out.println("Zindex:"+this.m_House4_Sprite.getZIndex());
 	}
 	
-	
+	/*
+	 * Load Resources HUD
+	 */
+
 	//Load resource icon_setting
 	public void load_Icon_Setting_Resource(){
 		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
@@ -820,6 +888,23 @@ public class TMXIsometricExampleActivity extends BaseGameActivity implements
 		this.mHUD_Icon_Setting_ITextureRegion=BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mHUD_Icon_Setting_BitmapTextureAtlas, this, "icon_setting.png",0,0);
 		this.mHUD_Icon_Setting_BitmapTextureAtlas.load();
 	} 
+	//Load resource bgProcess
+	public void load_BgProcess_Resoucre(){
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
+		this.mHUD_BgProcess_BitmapTextureAtlas=new BitmapTextureAtlas(this.getTextureManager(), 200, 36);
+		this.mHUD_BgProcess_ITextureRegion=BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mHUD_BgProcess_BitmapTextureAtlas, this, "bg_process.png",0,0);
+		this.mHUD_BgProcess_BitmapTextureAtlas.load();
+	}
+	
+	public void load_Process_Resource(){
+		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
+		this.mHUD_Process_BitmapTextureAtlas=new BitmapTextureAtlas(this.getTextureManager(), 200, 36);
+		this.mHUD_Process_ITextureRegion=BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mHUD_Process_BitmapTextureAtlas, this, "process.png",0,0);
+		this.mHUD_Process_BitmapTextureAtlas.load();
+	}
+	/*
+	 * Finished Load Resources HUD
+	 */
 	
 	
 	//Add Setting
