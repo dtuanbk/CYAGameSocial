@@ -190,8 +190,6 @@ public class LoginActivity extends SimpleBaseGameActivity {
 					@Override
 					public void run() {
 						// TODO Auto-generated method stub
-//						showToast("Let's Go");
-//						showToast("Name:"+name+" Pass:"+pass);
 						Intent intent=new Intent(getApplicationContext(), TMXIsometricExampleActivity.class);
 						startActivity(intent);
 					}
@@ -302,7 +300,7 @@ public class LoginActivity extends SimpleBaseGameActivity {
 	@Override
 	protected synchronized void onResume() {
 		// TODO Auto-generated method stub
-		username = createEditText(true, 1, "User name", "", 60,
+		username = createEditText(true, 1, "Tên đăng nhập", "", 60,
 				Color.TRANSPARENT);
 		tableLayout = createTableLayout(253, 129, 270,
 				MyCamera.CAMERA_HEIGHT - 129 - 60, username);
